@@ -23,9 +23,9 @@ export const amber: UnitData = {
     type: "elemental",
     desc: "summon(dur4, vit2, taunt, on-defeat:3d10炎)",
     summon: {
-      name: "Baron Bunny", vitality:4, auras:["taunt"], duration:4,
+      name: "Baron Bunny", vitality:8, auras: { "taunt": true }, duration:4,
       on: { defeated: {
-          target: "all", hits: [{ dice: [10, 10, 10], element: "炎" }]
+          target: "all", hits: [{ dice: [10, 10], element: "炎" }]
       }}
     }
   },{

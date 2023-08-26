@@ -1,5 +1,5 @@
 import {rgb24} from "https://deno.land/std@0.190.0/fmt/colors.ts";
-import {elements, PrismaUnit, Skill, UnitData} from "./model.ts";
+import {elements, Kombat, PrismaUnit, Skill, UnitData} from "./model.ts";
 import {
   amber,
   apprenticesNotes,
@@ -16,16 +16,16 @@ const createUnit = (data: UnitData, equips: any[] = []): PrismaUnit => ({
   data,
   equips,
   auras: { ...data.auras },
+  on: { ...data.on },
   get skills() { return [...data.skills, ...equips.flatMap(e=>e.skills)] }
 })
 
-// type Attack = { damage: number, rolls: { roll:number, die:number }[] }
 const roll = (die: number) => ({die, roll:Math.floor(Math.random() * die) + 1})
 
 const x = (times:number, die:number): number[] => Array(times).fill(die)
 
-const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill) => {
-  for (let hit of skill.hits) {
+const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Kombat) => {
+  for (let hit of skill.hits ?? []) {
     const dice = hit.dice
       .concat(...source.equips.flatMap(e=>e.on?.atk?.bonus ?? []))
 
@@ -59,13 +59,19 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill) => {
       })
     }
   }
+
+  if (skill.summon) {
+    kombat.summons.push(createUnit(skill.summon))
+  }
 }
 
 const atkCommands = { e: "elemental", b: "burst", n: "normal" }
 
-const statusStr = (u: PrismaUnit) => `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras).filter(a=>elements.includes(a as Element))}`
+const statusStr = (u: PrismaUnit) =>
+  `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras)
+    .filter(a=>elements.includes(a as Element))}`
 
-const kombat = {
+const kombat: Kombat = {
   enemies: [...Array(3)].map(_=>createUnit(hilichurl)),
   team: [
     createUnit(lumineAnemo, [dullblade, gladiatorsFinaleSands]),
@@ -78,7 +84,7 @@ const kombat = {
 console.log("Você achou 3 Hilixús!")
 
 while (kombat.enemies.length > 0) {
-  console.log(`${kombat.team.map(statusStr).join(" ")}   ${kombat.enemies.map(statusStr).join(" ")}`
+  console.log([kombat.team, kombat.summons, kombat.enemies].map(t=>t.map(statusStr)).join("   ")
     .replace("炎", rgb24("炎", 0xef7a35)))
   const command = prompt("O que você vai fazer?", "normal")
 
@@ -94,12 +100,18 @@ while (kombat.enemies.length > 0) {
   const target = kombat.enemies[0]
   const atkName = atkCommands[command] ?? command
   const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
-  attack(source, target, skill)
-  if (target.hp < 1) {
+  attack(source, target, skill, kombat)
+  if (target.hp > 0) {
+    const retaliateTarget = [...kombat.summons, ...kombat.team]
+      .find((u) => u.auras["taunt"]) ?? target
+    attack(target, retaliateTarget, target.skills[0], kombat)
+
+    if (retaliateTarget.hp < 1 && retaliateTarget.on?.defeated) {
+      attack(retaliateTarget, target, retaliateTarget.on?.defeated, kombat)
+    }
+  } else {
     console.log(`O ${target.data.name} caiu!`)
     kombat.enemies.shift()
-  } else {
-    attack(target, source, target.skills[0])
   }
 }
 
