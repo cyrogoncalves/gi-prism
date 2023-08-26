@@ -1,0 +1,6 @@
+{
+  "version": "2",
+  "remote": {
+    "https://deno.land/std@0.190.0/fmt/colors.ts": "d67e3cd9f472535241a8e410d33423980bec45047e343577554d3356e1f0ef4e"
+  }
+}
