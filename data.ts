@@ -21,7 +21,8 @@ export const lumineAnemo: UnitData = {
 export const amber: UnitData = {
   vitality: 10, name:"Amber", skills: [{
     type: "elemental",
-    desc: "summon(dur4, vit2, taunt, on-defeat:3d10炎)",
+    desc: "e[cd5]summon(dur4, vit2, taunt, on-defeat:3d10炎)",
+    cooldown: 5,
     summon: {
       name: "Baron Bunny", vitality:8, auras: { "taunt": true }, duration:4,
       on: { defeated: {
@@ -35,10 +36,10 @@ export const amber: UnitData = {
 export const barbara: UnitData = {
   vitality: 10, name:"Barbara", skills: [], auras: { infusion:"水" }
 }
-export const dullblade: Equip = { skills: [{ desc:"1d10", hits: [{ dice: [10] }]}] }
+export const dullblade: Equip = { skills: [{ desc:"1d10", type: "normal", hits: [{ dice: [10] }]}] }
 // const huntersBow: Equip = { skills: [{ desc:"1d8", hits:[{dice:[8]}]}] }
-export const pyroHuntersBow: Equip = { skills: [{ desc:"1d8炎", hits:[{dice:[8], element:"炎"}]}] }
-export const apprenticesNotes: Equip = { skills: [{ desc:"1d8素", hits:[{dice:[8]}]}] }
+export const pyroHuntersBow: Equip = { skills: [{ desc:"1d8炎", type: "normal", hits:[{dice:[8], element:"炎"}]}] }
+export const apprenticesNotes: Equip = { skills: [{ desc:"1d8素", type: "normal", hits:[{dice:[8]}]}] }
 
 // 生の花 死の羽 時の砂 空の杯 理の冠
 export const gladiatorsFinaleSands: Artifact = {

@@ -17,8 +17,9 @@ export type Summon = UnitData & {
   duration: number
 }
 export type Skill = {
-  type?: "normal" | "elemental" | "burst"
+  type: "normal" | "elemental" | "burst"
   desc?: string
+  cooldown?: number
   hits?: {
     dice: number[],
     element?: Element

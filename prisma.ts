@@ -40,7 +40,7 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
 
     const rolls = dice.map(roll)
     const damage = rolls.reduce((a,b)=> a+b.roll, 0)
-    console.log(`${target.data.name} tomou ${damage} de dano [${(rolls.map(r => `d${r.die}(${r.roll})`))}]`)
+    console.log(`${target.data.name} tomou ${damage} de dano ${element ?? ""} [${(rolls.map(r => `d${r.die}(${r.roll})`))}]`)
     target.hp -= damage
 
     if (target.auras["風"] && target.auras["炎"]) { // pyro swirl
@@ -63,6 +63,10 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
   if (skill.summon) {
     kombat.summons.push(createUnit(skill.summon))
   }
+
+  if (skill.cooldown) {
+    source.auras[`cooldown-${skill.type}`] = { duration: skill.cooldown }// TODO charges
+  }
 }
 
 const atkCommands = { e: "elemental", b: "burst", n: "normal" }
@@ -80,7 +84,6 @@ const chamberEnemies = [
   [...Array(3)].map(_=>createUnit(hilichurl)),
   [...Array(5)].map(_=>createUnit(hilichurl)),
   [...Array(8)].map(_=>createUnit(hilichurl)),
-  [...Array(13)].map(_=>createUnit(hilichurl)),
 ]
 
 for (let enemies of chamberEnemies) {
@@ -101,17 +104,23 @@ for (let enemies of chamberEnemies) {
     }
 
     const source = kombat.team[kombat.cur]
-    const target = kombat.enemies[0]
     const atkName = atkCommands[command] ?? command
     const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
+    if (source.auras[`cooldown-${skill.type}`]?.duration > 0) {
+      console.log("Habilidade em cooldown")
+      continue
+    }
+
+    const target = kombat.enemies[0]
     attack(source, target, skill, kombat)
     if (target.hp > 0) {
       const retaliateTarget = [...kombat.summons, ...kombat.team]
-        .find(u => u.auras["taunt"]) ?? target
+        .find(u => u.auras["taunt"]) ?? source
       attack(target, retaliateTarget, target.skills[0], kombat)
 
       if (retaliateTarget.hp < 1 && retaliateTarget.on?.defeated) {
-        attack(retaliateTarget, target, retaliateTarget.on?.defeated, kombat)
+        console.log(`O ${retaliateTarget.data.name} fez uma coisa quando caiu...`)
+        attack(retaliateTarget, target, retaliateTarget.on.defeated, kombat)
       }
     }
 
