@@ -69,50 +69,61 @@ const atkCommands = { e: "elemental", b: "burst", n: "normal" }
 
 const statusStr = (u: PrismaUnit) =>
   `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras)
-    .filter(a=>elements.includes(a as Element))}`
+    .filter(a=>elements.includes(a as any))}`
 
-const kombat: Kombat = {
-  enemies: [...Array(3)].map(_=>createUnit(hilichurl)),
-  team: [
-    createUnit(lumineAnemo, [dullblade, gladiatorsFinaleSands]),
-    createUnit(amber, [pyroHuntersBow]),
-    createUnit(barbara, [apprenticesNotes]),
-  ],
-  cur: 0,
-  summons: []
-}
-console.log("Você achou 3 Hilixús!")
+const team = [
+  createUnit(lumineAnemo, [dullblade, gladiatorsFinaleSands]),
+  createUnit(amber, [pyroHuntersBow]),
+  createUnit(barbara, [apprenticesNotes]),
+];
+const chamberEnemies = [
+  [...Array(3)].map(_=>createUnit(hilichurl)),
+  [...Array(5)].map(_=>createUnit(hilichurl)),
+  [...Array(8)].map(_=>createUnit(hilichurl)),
+  [...Array(13)].map(_=>createUnit(hilichurl)),
+]
 
-while (kombat.enemies.length > 0) {
-  console.log([kombat.team, kombat.summons, kombat.enemies].map(t=>t.map(statusStr)).join("   ")
-    .replace("炎", rgb24("炎", 0xef7a35)))
-  const command = prompt("O que você vai fazer?", "normal")
+for (let enemies of chamberEnemies) {
+  const kombat: Kombat = {enemies, team, cur: 0, summons: []}
+  console.log(`Você achou ${kombat.enemies.length} Hilixús!`)
 
-  const charIdx = kombat.team.findIndex(c=>c.data.name===command)
-  if (charIdx !== -1) {
-    kombat.cur = charIdx
-    continue
-  }
+  do {
+    console.log([kombat.team, kombat.summons, kombat.enemies]
+      .map(t=>t.map(statusStr)).join("   ")
+      .replace("炎", rgb24("炎", 0xef7a35)))
+    const command = prompt("O que você vai fazer?", "normal")
+    console.log("\x1B[2J\x1B[0;0H")
 
-  console.log("\x1B[2J\x1B[0;0H")
-
-  const source = kombat.team[kombat.cur]
-  const target = kombat.enemies[0]
-  const atkName = atkCommands[command] ?? command
-  const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
-  attack(source, target, skill, kombat)
-  if (target.hp > 0) {
-    const retaliateTarget = [...kombat.summons, ...kombat.team]
-      .find((u) => u.auras["taunt"]) ?? target
-    attack(target, retaliateTarget, target.skills[0], kombat)
-
-    if (retaliateTarget.hp < 1 && retaliateTarget.on?.defeated) {
-      attack(retaliateTarget, target, retaliateTarget.on?.defeated, kombat)
+    const charIdx = kombat.team.findIndex(c=>c.data.name===command)
+    if (charIdx !== -1) {
+      kombat.cur = charIdx
+      continue
     }
-  } else {
-    console.log(`O ${target.data.name} caiu!`)
-    kombat.enemies.shift()
-  }
+
+    const source = kombat.team[kombat.cur]
+    const target = kombat.enemies[0]
+    const atkName = atkCommands[command] ?? command
+    const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
+    attack(source, target, skill, kombat)
+    if (target.hp > 0) {
+      const retaliateTarget = [...kombat.summons, ...kombat.team]
+        .find(u => u.auras["taunt"]) ?? target
+      attack(target, retaliateTarget, target.skills[0], kombat)
+
+      if (retaliateTarget.hp < 1 && retaliateTarget.on?.defeated) {
+        attack(retaliateTarget, target, retaliateTarget.on?.defeated, kombat)
+      }
+    }
+
+    kombat.enemies.filter(e=>e.hp <= 0)
+      .forEach(e=>console.log(`O ${e.data.name} caiu!`))
+    kombat.enemies = kombat.enemies.filter(e=>e.hp > 0)
+
+    kombat.summons.filter(e=>e.hp <= 0)
+      .forEach(e=>console.log(`O ${e.data.name} caiu!`))
+    kombat.summons = kombat.summons.filter(e=>e.hp > 0)
+  } while (kombat.enemies.length > 0)
 }
+console.log("Parabéns, você chegou ao fim do abismo")
 
 // deno run prisma.ts
