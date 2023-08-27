@@ -45,7 +45,7 @@ export type Artifact = Equip & {
 }
 
 export type Kombat = {
-  team: PrismaUnit[], enemies: PrismaUnit[], cur: number, summons: PrismaUnit[]
+  team: PrismaUnit[], enemies: PrismaUnit[], cur: number, summons: PrismaUnit[], log: string
 }
 
 // type Attack = { damage: number, rolls: { roll:number, die:number }[] }
