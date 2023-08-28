@@ -1,15 +1,19 @@
+// @ts-ignore
 import {rgb24} from "https://deno.land/std@0.190.0/fmt/colors.ts";
-import {elements, Kombat, PrismaUnit, Skill, UnitData} from "./model.ts";
+// @ts-ignore
+import {Artifact, ArtifactPiece, elements, Kombat, pieces, PrismaUnit, Skill, UnitData} from "./model.ts";
+// @ts-ignore
 import {
   amber,
   apprenticesNotes,
   barbara,
   dullblade,
-  gladiatorsFinaleSands,
   hilichurl,
-  lumineAnemo,
-  pyroHuntersBow
+  lumineAnemo, mainStats,
+  pyroHuntersBow, sets
 } from "./data.ts";
+// @ts-ignore
+import * as txt from "./artifacts.en.map.json" assert { type: "json" };
 
 const createUnit = (data: UnitData, equips: any[] = []): PrismaUnit => ({
   hp: data.vitality,
@@ -23,6 +27,17 @@ const createUnit = (data: UnitData, equips: any[] = []): PrismaUnit => ({
 const roll = (die: number) => ({die, roll:Math.floor(Math.random() * die) + 1})
 
 const x = (times:number, die:number): number[] => Array(times).fill(die)
+
+const rng = <T>(a:T[]): T => a[Math.floor(Math.random() * a.length)]
+
+const createRandomArtifact = (): Artifact => {
+  const set = rng(Object.values(sets))
+  const piece: ArtifactPiece = rng(pieces)
+  const mainStat: { desc: string, slots:number, on:any} = rng(mainStats[piece])
+  return {
+    ...mainStat, set: set.name, piece
+  }
+}
 
 const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Kombat) => {
   const logs = []
@@ -79,7 +94,7 @@ const statusStr = (u: PrismaUnit) =>
     .filter(a=>elements.includes(a as any))}`
 
 const team = [
-  createUnit(lumineAnemo, [dullblade, gladiatorsFinaleSands]),
+  createUnit(lumineAnemo, [dullblade]),
   createUnit(amber, [pyroHuntersBow]),
   createUnit(barbara, [apprenticesNotes]),
 ];
@@ -92,8 +107,6 @@ const chamberEnemies = [
 for (let enemies of chamberEnemies) {
   const kombat: Kombat = {enemies, team, cur: 0, summons: [],
     log: `Você achou ${enemies.length} Hilixús!`}
-  console.log(`Você achou ${kombat.enemies.length} Hilixús!`)
-
   do {
     console.log("\x1B[2J\x1B[0;0H")
     console.log([kombat.team, kombat.summons, kombat.enemies]
@@ -137,6 +150,12 @@ for (let enemies of chamberEnemies) {
       .map(e=>`\nO ${e.data.name} caiu!`).join("")
     kombat.summons = kombat.summons.filter(e=>e.hp > 0)
   } while (kombat.enemies.length > 0)
+
+  const loot = createRandomArtifact()
+  console.log("\x1B[2J\x1B[0;0H")
+  console.log("Você completou a câmara e encontrou um prêmio")
+  console.log(`"${txt[loot.set]?.[loot.piece].flavor}"`)
+  prompt("Seguir para a próxima câmara?")
 }
 console.log("Parabéns, você chegou ao fim do abismo")
 

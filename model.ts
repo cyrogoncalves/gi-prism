@@ -27,25 +27,34 @@ export type Skill = {
   summon?: Summon
 }
 export type Equip = {
-  desc?: string, name?: string,
+  desc?: string,
+  name?: string,
   skills?: Skill[],
   on?: Triggers
 }
 export const elements = ["風", "炎", "水", "岩", "氷", "電", "草"] as const
 export type Element = typeof elements[number];
 
-const triggers = ["start", "atk", "hit", "defeated"] as const
+const triggers = ["start", "atk", "hit", "defeated", "roll", "equip"] as const
 type Trigger = typeof triggers[number];
 export type Triggers = { [t in Trigger]?: any }
 
+export const pieces = ["生の花", "死の羽", "時の砂", "空の杯", "理の冠"]
+export type ArtifactPiece = typeof pieces[number];
+
 export type Artifact = Equip & {
-  piece: string,
+  slots: number,
+  piece: ArtifactPiece,
   set: string,
-  flavor: string
+  // flavor: string
 }
 
 export type Kombat = {
-  team: PrismaUnit[], enemies: PrismaUnit[], cur: number, summons: PrismaUnit[], log: string
+  team: PrismaUnit[],
+  enemies: PrismaUnit[],
+  summons: PrismaUnit[],
+  cur: number,
+  log: string
 }
 
 // type Attack = { damage: number, rolls: { roll:number, die:number }[] }

@@ -1,0 +1,16 @@
+{
+  "Gladiator's Finale": {
+    "生の花": { "name": "Gladiator's Nostalgia", "flavor": "No one knows why the legendary gladiator wore this flower on his chest. It was the brutal warrior's only weakness."},
+    "死の羽": { "name": "Gladiator's Destiny", "flavor": "A feather of dreams that soars free like an eagle. At the end of the gladiator's legendary life, this parting gift was left upon his chest by a bird that knew true freedom."},
+    "時の砂": { "name": "Gladiator's Longing", "flavor": "A timepiece that recorded the gladiator's days in the bloodstained Colosseum. To him, it counted down the days on his long road to freedom."},
+    "空の杯": { "name": "Gladiator's Intoxication", "flavor": "The golden cup a champion gladiator drank from in ancient times. It brimmed with his glory for years until the fateful day of his fall."},
+    "理の冠": { "name": "Gladiator's Triumphus", "flavor": "The helmet of a legendary gladiator from ancient times, who would proudly stretch out his bloodied arms to welcome the thunderous applause of his audience."}
+  },
+  "Wanderer's Troupe": {
+    "生の花": { "name": "Troupe's Dawnlight", "flavor": "A small flower-shaped insignia. If you listen carefully, you can almost hear a flute playing and voices singing."},
+    "死の羽": { "name": "Bard's Arrow Feather", "flavor": "An azure arrow fletching that has neither faded nor splintered with the passage of time. The sound of running water seems to linger around it."},
+    "時の砂": { "name": "Concert's Final Hour", "flavor": "An hourglass used to keep time during a band performance. It once made a crisp sound, but their performance has since ended."},
+    "空の杯": { "name": "Wanderer's String-Kettle", "flavor": "An ancient, strangely-shaped canteen. The interior is fitted with harp strings, which plays a wondrous tune as the water flows out."},
+    "理の冠": { "name": "Conductor's Top Hat", "flavor": "A top hat that has managed to retain its radiance despite braving the elements for time untold. An ancient tune still resonates within."}
+  }
+}
