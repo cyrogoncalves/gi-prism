@@ -1,6 +1,7 @@
 {
   "version": "2",
   "remote": {
-    "https://deno.land/std@0.190.0/fmt/colors.ts": "d67e3cd9f472535241a8e410d33423980bec45047e343577554d3356e1f0ef4e"
+    "https://deno.land/std@0.190.0/fmt/colors.ts": "d67e3cd9f472535241a8e410d33423980bec45047e343577554d3356e1f0ef4e",
+    "https://deno.land/x/keypress@0.0.11/mod.ts": "22fe0ea62136f3015149c639f891076a5b2312c0b8974c4a2bd8acaaded61c61"
   }
 }

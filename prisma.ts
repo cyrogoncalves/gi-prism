@@ -1,5 +1,7 @@
 // @ts-ignore
-import {rgb24} from "https://deno.land/std@0.190.0/fmt/colors.ts";
+import {rgb24, gray} from "https://deno.land/std@0.190.0/fmt/colors.ts";
+// @ts-ignore
+import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 // @ts-ignore
 import {Artifact, ArtifactPiece, elements, Kombat, pieces, PrismaUnit, Skill, UnitData} from "./model.ts";
 // @ts-ignore
@@ -84,10 +86,10 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
     source.auras[`cooldown-${skill.type}`] = { duration: skill.cooldown }// TODO charges
   }
 
-  kombat.log = logs.join("\n")
+  kombat.log += logs.join("\n")
 }
 
-const atkCommands = { e: "elemental", b: "burst", n: "normal" }
+const atkCommands = { e: "elemental", r: "burst", q: "normal" }
 
 const statusStr = (u: PrismaUnit) =>
   `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras)
@@ -98,31 +100,37 @@ const team = [
   createUnit(amber, [pyroHuntersBow]),
   createUnit(barbara, [apprenticesNotes]),
 ];
+let floorId = 0
 const chamberEnemies = [
   [...Array(3)].map(_=>createUnit(hilichurl)),
   [...Array(5)].map(_=>createUnit(hilichurl)),
   [...Array(8)].map(_=>createUnit(hilichurl)),
 ]
 
-for (let enemies of chamberEnemies) {
-  const kombat: Kombat = {enemies, team, cur: 0, summons: [],
-    log: `Você achou ${enemies.length} Hilixús!`}
-  do {
-    console.log("\x1B[2J\x1B[0;0H")
-    console.log([kombat.team, kombat.summons, kombat.enemies]
-      .map(t=>t.map(statusStr)).join("   ")
-      .replace("炎", rgb24("炎", 0xef7a35)))
-    console.log(kombat.log)
-    const command = prompt("O que você vai fazer?", "normal")
+const printStatus = (kombat: Kombat) => {
+  console.log("\x1B[2J\x1B[0;0H")
+  console.log([kombat.team, kombat.summons, kombat.enemies]
+    .map(t=>t.map(statusStr)).join("   ")
+    .replace("炎", rgb24("炎", 0xef7a35)))
+  console.log(kombat.log)
+  kombat.log = ""
+}
 
-    const charIdx = kombat.team.findIndex(c=>c.data.name===command)
-    if (charIdx !== -1) {
-      kombat.cur = charIdx
-      continue
-    }
+const enemies = chamberEnemies[floorId++];
+let kombat: Kombat = {enemies, team, cur: 0, summons: [],
+  log: `Você achou ${enemies.length} Hilixús!`}
+printStatus(kombat)
 
+for await (const keypress of readKeypress()) {
+  // console.debug({keypress});
+  if (keypress.ctrlKey && keypress.key === 'c') Deno.exit(0);
+
+  if (["1", "2", "3", "4"].includes(keypress.key)) {
+    kombat.cur = Number(keypress.key)
+    continue
+  } else if (["q", "w", "e", "r"].includes(keypress.key)) {
     const source = kombat.team[kombat.cur]
-    const atkName = atkCommands[command] ?? command
+    const atkName = atkCommands[keypress.key] ?? keypress.key
     const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
     if (source.auras[`cooldown-${skill.type}`]?.duration > 0) {
       kombat.log = "Habilidade em cooldown"
@@ -149,14 +157,20 @@ for (let enemies of chamberEnemies) {
     kombat.log += kombat.summons.filter(e=>e.hp <= 0)
       .map(e=>`\nO ${e.data.name} caiu!`).join("")
     kombat.summons = kombat.summons.filter(e=>e.hp > 0)
-  } while (kombat.enemies.length > 0)
 
-  const loot = createRandomArtifact()
-  console.log("\x1B[2J\x1B[0;0H")
-  console.log("Você completou a câmara e encontrou um prêmio")
-  console.log(`"${txt[loot.set]?.[loot.piece].flavor}"`)
-  prompt("Seguir para a próxima câmara?")
+    if (kombat.enemies.length === 0) {
+      const loot = createRandomArtifact()
+      // console.log("\x1B[2J\x1B[0;0H")
+      console.log("Você completou a câmara e encontrou um prêmio")
+      console.log(`"${txt[loot.set]?.[loot.piece].flavor}"`)
+      confirm("Seguir para a próxima câmara?")
+
+      const enemies = chamberEnemies[floorId++];
+      kombat = {enemies, team, cur: 0, summons: [],
+        log: `Você achou ${enemies.length} Hilixús!`}
+    }
+  }
+  printStatus(kombat)
 }
-console.log("Parabéns, você chegou ao fim do abismo")
 
 // deno run prisma.ts
