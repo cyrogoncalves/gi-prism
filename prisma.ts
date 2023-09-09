@@ -86,6 +86,17 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
     source.auras[`cooldown-${skill.type}`] = { duration: skill.cooldown }// TODO charges
   }
 
+  if (skill.heal) {
+    const value = skill.heal.value ?? skill.heal.$value(kombat)
+    const targetStr = skill.heal.target ?? "self"
+    const target = {
+      self: [source],
+      all: kombat.team
+    }[targetStr]
+    console.debug({value, targetStr, target})
+    target.forEach(c=>c.hp = Math.min(c.hp+value, c.data.vitality))
+  }
+
   kombat.log += logs.join("\n")
 }
 
@@ -108,7 +119,7 @@ const chamberEnemies = [
 ]
 
 const printStatus = (kombat: Kombat) => {
-  console.log("\x1B[2J\x1B[0;0H")
+  // console.log("\x1B[2J\x1B[0;0H")
   console.log([kombat.team, kombat.summons, kombat.enemies]
     .map(t=>t.map(statusStr)).join("   ")
     .replace("炎", rgb24("炎", 0xef7a35)))
@@ -118,7 +129,8 @@ const printStatus = (kombat: Kombat) => {
 
 const enemies = chamberEnemies[floorId++];
 let kombat: Kombat = {enemies, team, cur: 0, summons: [],
-  log: `Você achou ${enemies.length} Hilixús!`}
+  get char() { return this.team[this.cur] },
+  log: `Você achou ${enemies.length} Hilixús!` }
 printStatus(kombat)
 
 for await (const keypress of readKeypress()) {
@@ -167,6 +179,7 @@ for await (const keypress of readKeypress()) {
 
       const enemies = chamberEnemies[floorId++];
       kombat = {enemies, team, cur: 0, summons: [],
+        get char() { return this.team[this.cur] },
         log: `Você achou ${enemies.length} Hilixús!`}
     }
   }

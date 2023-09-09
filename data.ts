@@ -11,6 +11,7 @@ export const hydroSlime: UnitData = {
   skills: [{type: "normal", desc: "1d8水", hits:[{dice: [8], element:"水"}]}],
   on: { start: { aura:"水", target:"self" } }
 }
+
 export const lumineAnemo: UnitData = {
   vitality: 10, name:"Lumine", skills: [{
     type: "elemental",
@@ -21,7 +22,7 @@ export const lumineAnemo: UnitData = {
 export const amber: UnitData = {
   vitality: 10, name:"Amber", skills: [{
     type: "elemental",
-    desc: "e[cd5]summon(dur4, vit2, taunt, on-defeat:3d10炎)",
+    desc: "e[cd5]summon(dur4, vit2, taunt, on-defeated:3d10炎)",
     cooldown: 5,
     summon: {
       name: "Baron Bunny", vitality:8, auras: { "taunt": true }, duration:4,
@@ -34,7 +35,16 @@ export const amber: UnitData = {
   }]
 }
 export const barbara: UnitData = {
-  vitality: 10, name:"Barbara", skills: [], auras: { infusion:"水" }
+  vitality: 10, name:"Barbara", skills: [{
+    desc: "e:aura(cd4, dur4, on:hit:heal-all:1, on:start:heal-self:1)",
+    cooldown: 4,
+    type: "elemental",
+    aura: {
+      duration: 4, on: { hit: { heal: { target: "all", value: 1}}, start: { heal: {value: 1}}}
+    }
+  }, {
+    type: "burst", desc: "b:heal-all:[vit]", heal: { target: "all", $value: k=>k.char.data.vitality}
+  }], auras: { infusion:"水" }
 }
 export const dullblade: Equip = { skills: [{ desc:"1d10", type: "normal", hits: [{ dice: [10] }]}] }
 // const huntersBow: Equip = { skills: [{ desc:"1d8", hits:[{dice:[8]}]}] }
@@ -56,26 +66,26 @@ export const sets = {
   0x0c: { name: "Gambler", bonus: "" },
   0x0d: { name: "Scholar", bonus: "" },
   0x0e: { name: "Prayers", bonus: "" },
-  0x10: { name: "Gladiator's Finale", bonus: "melleWeapon+3d6" },
-  0x11: { name: "Wanderer's Troupe", bonus: "ranged+3d6" },
+  0x10: { name: "Gladiator's Finale", bonus: "meleeWeapon+2d6" },
+  0x11: { name: "Wanderer's Troupe", bonus: "ranged+2d6" },
   0x12: { name: "Noblesse Oblige", bonus: "on-burst:all.+1d6 dur8" },
   0x13: { name: "Bloodstained Chivalry", bonus: "on-slay:physical+2d10" },
   0x14: { name: "Maiden Beloved", bonus: "all.healing+2" },
   0x15: { name: "Viridescent Venerer", bonus: "on-swirl:swirledElement+6[6] dur4 (*or +1 per die)" },
   0x16: { name: "Archaic Petra", bonus: "on-[e]-cristalize-pick:[e]+2d8" },
-  0x17: { name: "Retracing Bolide", bonus: "while-shielded:wpnAtk+4d6" },
-  0x18: { name: "Thundersoother", bonus: "on-electro-aura-hit:e+7d4" },
+  0x17: { name: "Retracing Bolide", bonus: "while-shielded:wpnAtk+3d6" },
+  0x18: { name: "Thundersoother", bonus: "on-electro-aura-hit:e+5d4" },
   0x19: { name: "Thundering Fury", bonus: "electro-reaction+2, skill-(1 to 2)-roll:3" },
-  0x1a: { name: "Lavawalker", bonus: "on-pyro-aura-hit:e+7d4" },
+  0x1a: { name: "Lavawalker", bonus: "on-pyro-aura-hit:e+5d4" },
   0x1b: { name: "Crimson Witch of Flames", bonus: "pyro-transf-reaction+2, pyro+1d6[dur4][max3]" },
   0x1c: { name: "Blizzard Strayer", bonus: "on-cryo-aura-hit:reroll+2, on-frozen-hit:reroll+2" },
   0x1d: { name: "Heart of Depth", bonus: "on-skill:hydro+1d12[dur6]" },
   0x1e: { name: "Tenacity of Millelith", bonus: "shield+1, on-skill-hit:all+1d6[dur2]" },
-  0x1f: { name: "Pale Flame", bonus: "on-skill:+1d8[max2][dur7s], on-2:physycal+5d6" },
-  0x20: { name: "Shimenawa's Reminiscence" },
-  0x21: { name: "Emblem of Severed Fate" },
-  0x22: { name: "Husk of Opulent Dreams" },
-  0x23: { name: "Ocean-Hued Clam" },
+  0x1f: { name: "Pale Flame", bonus: "on-skill:+1d8[max2][dur7s], on-2:physycal+4d6" },
+  0x20: { name: "Shimenawa's Reminiscence", bonus: "on-e:energy-30&wpnAtk+3d6" },
+  0x21: { name: "Emblem of Severed Fate", bonus: "b+[er]d6" },
+  0x22: { name: "Husk of Opulent Dreams", bonus: "on-geo:$+2, on-off-field:$+1, on-on-field:$-1 [max$=4] def+$/2, geo+[$/2]d6" },
+  0x23: { name: "Ocean-Hued Clam", bonus: "on[heal]:$1+=[max(hp + heal - vit, 0)/5]&$2=$2??3, on[end]:if(--$2=0)hit(($1=0)d4)" },
   0x24: { name: "Vermillion Hereafter" },
   0x25: { name: "Echoes of an Offering" },
   0x26: { name: "Deepwood Memories" },

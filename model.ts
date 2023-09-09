@@ -16,6 +16,10 @@ export type UnitData = {
 export type Summon = UnitData & {
   duration: number
 }
+export type Aura = {
+  duration: number
+  on?: Triggers
+}
 export type Skill = {
   type: "normal" | "elemental" | "burst"
   desc?: string
@@ -24,7 +28,13 @@ export type Skill = {
     dice: number[],
     element?: Element
   }[],
-  summon?: Summon
+  summon?: Summon,
+  aura?: Aura,
+  heal?: {
+    target: string,
+    value?: number,
+    $value?: (k: Kombat) => number
+  }
 }
 export type Equip = {
   desc?: string,
@@ -54,7 +64,9 @@ export type Kombat = {
   enemies: PrismaUnit[],
   summons: PrismaUnit[],
   cur: number,
-  log: string
+  log: string,
+
+  char: PrismaUnit
 }
 
 // type Attack = { damage: number, rolls: { roll:number, die:number }[] }
