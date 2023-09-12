@@ -1,5 +1,5 @@
 // @ts-ignore
-import {rgb24, gray} from "https://deno.land/std@0.190.0/fmt/colors.ts";
+import {rgb24, gray, blue, cyan, brightBlue, yellow, magenta, green, bold} from "https://deno.land/std@0.190.0/fmt/colors.ts";
 // @ts-ignore
 import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 // @ts-ignore
@@ -16,6 +16,8 @@ import {
 } from "./data.ts";
 // @ts-ignore
 import * as txt from "./artifacts.en.map.json" assert { type: "json" };
+
+const orange = (x:string):string => rgb24(x, 0xef7a35)
 
 const createUnit = (data: UnitData, equips: any[] = []): PrismaUnit => ({
   hp: data.vitality,
@@ -102,10 +104,6 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
 
 const atkCommands = { e: "elemental", r: "burst", q: "normal" }
 
-const statusStr = (u: PrismaUnit) =>
-  `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras)
-    .filter(a=>elements.includes(a as any))}`
-
 const team = [
   createUnit(lumineAnemo, [dullblade]),
   createUnit(amber, [pyroHuntersBow]),
@@ -118,11 +116,41 @@ const chamberEnemies = [
   [...Array(8)].map(_=>createUnit(hilichurl)),
 ]
 
+// const statusStr = (u: PrismaUnit) =>
+//   `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras)
+//     .filter(a=>elements.includes(a as any))}`
+const elementColorMap = {
+  "炎": orange,
+  "水": blue,
+  "氷": brightBlue,
+  "電": magenta,
+  "風": cyan,
+  "岩": yellow,
+  "草": green
+}
+// const elementColor = (text: string, element: string): string =>
+//   element ? elementColorMap[element](text) : text
+const charColor = (d: UnitData) => d.element ? elementColorMap[d.element](d.name) : d.name
+const hp = (c: PrismaUnit) => "♥".repeat(Math.max(0, c.hp))
+  + "♡".repeat(Math.min(c.data.vitality - c.hp, c.data.vitality))
 const printStatus = (kombat: Kombat) => {
-  // console.log("\x1B[2J\x1B[0;0H")
-  console.log([kombat.team, kombat.summons, kombat.enemies]
-    .map(t=>t.map(statusStr)).join("   ")
-    .replace("炎", rgb24("炎", 0xef7a35)))
+  console.log("\x1B[2J\x1B[0;0H")
+  console.log(kombat.team.map((c, i) =>
+    ` ${(i===kombat.cur ? gray : elementColorMap[c.data.element])(c.data.name)} `).join(""))
+  const char = kombat.char
+  console.log(`${bold(charColor(char.data))} ${hp(char)} `)
+  for (let summon of kombat.summons)
+    console.log(` ${charColor(summon.data)} ${hp(summon)} `)
+  console.log("")
+  for (let enemy of kombat.enemies) {
+    const elementalAuras = Object.keys(enemy.auras)
+      .filter(a=>elements.includes(a as any))
+      .map(e=>elementColorMap[e](e));
+    console.log(`${charColor(enemy.data)}${elementalAuras} ${hp(enemy)} `)
+  }
+  // console.log([kombat.team, kombat.summons, kombat.enemies]
+  //   .map(t=>t.map(statusStr)).join("   ")
+  //   .replace("炎", rgb24("炎", 0xef7a35)))
   console.log(kombat.log)
   kombat.log = ""
 }
@@ -137,9 +165,8 @@ for await (const keypress of readKeypress()) {
   // console.debug({keypress});
   if (keypress.ctrlKey && keypress.key === 'c') Deno.exit(0);
 
-  if (["1", "2", "3", "4"].includes(keypress.key)) {
-    kombat.cur = Number(keypress.key)
-    continue
+  if (["1", "2", "3", "4", "5"].slice(0, kombat.team.length).includes(keypress.key)) {
+    kombat.cur = Number(keypress.key) - 1
   } else if (["q", "w", "e", "r"].includes(keypress.key)) {
     const source = kombat.team[kombat.cur]
     const atkName = atkCommands[keypress.key] ?? keypress.key
@@ -185,5 +212,18 @@ for await (const keypress of readKeypress()) {
   }
   printStatus(kombat)
 }
+
+// 👤 Asagi          ❤  [
+// e🕐 q🔴 w⚔️
+// ❤️❤️❤️❤️🤍🤍🖤  [4/6]             🧟[1/10] 🧟[1/10] 🧟[1/10] 🧟[1/10] 🧟[1/10]
+// ▰▰▰▰▰▰▱▱▱ 9                    炎        炎
+// Lumn Ambr Barb Lisa
+
+// Alhaitham
+// Ningguang
+// Xiangling
+// Neuvillette
+// Wriothesley
+
 
 // deno run prisma.ts

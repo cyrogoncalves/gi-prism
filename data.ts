@@ -8,19 +8,20 @@ export const hilichurl: UnitData = {
 export const hydroSlime: UnitData = {
   vitality: 8,
   name: "Geleco Hydro",
+  element: "水",
   skills: [{type: "normal", desc: "1d8水", hits:[{dice: [8], element:"水"}]}],
   on: { start: { aura:"水", target:"self" } }
 }
 
 export const lumineAnemo: UnitData = {
-  vitality: 10, name:"Lumine", skills: [{
+  vitality: 10, name:"Lumine", element: "風", skills: [{
     type: "elemental",
     desc: "e:3*1d6風",
     hits: [{dice: [6], element:"風"}, {dice: [6]}, {dice: [6]}]
   }]
 }
 export const amber: UnitData = {
-  vitality: 10, name:"Amber", skills: [{
+  vitality: 10, name:"Amber", element: "炎", skills: [{
     type: "elemental",
     desc: "e[cd5]summon(dur4, vit2, taunt, on-defeated:3d10炎)",
     cooldown: 5,
@@ -35,7 +36,7 @@ export const amber: UnitData = {
   }]
 }
 export const barbara: UnitData = {
-  vitality: 10, name:"Barbara", skills: [{
+  vitality: 10, name:"Barbara", element: "水", skills: [{
     desc: "e:aura(cd4, dur4, on:hit:heal-all:1, on:start:heal-self:1)",
     cooldown: 4,
     type: "elemental",

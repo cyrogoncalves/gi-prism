@@ -9,6 +9,7 @@ export type PrismaUnit = {
 export type UnitData = {
   vitality: number,
   name: string,
+  element?: Element,
   skills?: Skill[],
   auras?: { [name in string]: any },
   on?: Triggers
@@ -42,7 +43,7 @@ export type Equip = {
   skills?: Skill[],
   on?: Triggers
 }
-export const elements = ["風", "炎", "水", "岩", "氷", "電", "草"] as const
+export const elements = ["炎", "水", "氷", "電", "風", "岩", "草"] as const
 export type Element = typeof elements[number];
 
 const triggers = ["start", "atk", "hit", "defeated", "roll", "equip"] as const
