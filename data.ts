@@ -1,4 +1,5 @@
-import {Artifact, ArtifactPiece, elements, Equip, pieces, UnitData} from "./model.ts";
+// @ts-ignore
+import { elements, Equip, UnitData } from "./model.ts";
 
 export const hilichurl: UnitData = {
   vitality: 10,
@@ -10,7 +11,7 @@ export const hydroSlime: UnitData = {
   name: "Geleco Hydro",
   element: "水",
   skills: [{type: "normal", desc: "1d8水", hits:[{dice: [8], element:"水"}]}],
-  on: { start: { aura:"水", target:"self" } }
+  auras: { on: { start: { aura:"水", target:"self" } } }
 }
 
 export const lumineAnemo: UnitData = {
@@ -44,8 +45,38 @@ export const barbara: UnitData = {
       duration: 4, on: { hit: { heal: { target: "all", value: 1}}, start: { heal: {value: 1}}}
     }
   }, {
-    type: "burst", desc: "b:heal-all:[vit]", heal: { target: "all", $value: k=>k.char.data.vitality}
+    type: "burst", desc: "b:heal-all:[vit]", heal: { target: "all", $value: k=>k.cur.data.vitality}
   }], auras: { infusion:"水" }
+}
+export const kaeya: UnitData = {
+  vitality: 10, name: "Kaeya", element: "氷", skills: [{
+    desc: "e[cd3]:2d12氷",
+    type: "elemental", cooldown: 3, hits:[{dice: [12, 12], element: "氷"}]
+  }, {
+    desc: "b[70]:teamAura[stack3]:on-change:1d6氷",
+    type: "burst"/*, cost: 70*/, aura: {
+      target: "team",
+      stacks: 3,
+      on:{change:{hits:[{dice:[6], element:"氷"}]}}
+    }
+  }]
+}
+export const lisa: UnitData = {
+  vitality: 10, name: "Lisa", element:"電", skills: [{
+    desc: "e:1d6電, on:hit:aura('Conductive', target:self, max3)",
+    type: "elemental", hits:[{ element:"電", $dice: k => {
+        k.cur.auras["Conductive"] = Math.max((k.cur.auras["Conductive"] ?? 0) + 1, 3)
+        return [6]
+    }}],
+  }, {
+    desc: "E:['Conductive'==0]d12 [target:all]", type: "elemental",
+    hits:[{ element:"電", $dice: k => {
+        const atk = Array(k.cur.auras["Conductive"]).fill(12)
+        k.cur.auras["Conductive"] = 0
+        return atk
+      }}],
+    target: "all"
+  }], auras: { infusion:"電" }
 }
 export const dullblade: Equip = { skills: [{ desc:"1d10", type: "normal", hits: [{ dice: [10] }]}] }
 // const huntersBow: Equip = { skills: [{ desc:"1d8", hits:[{dice:[8]}]}] }

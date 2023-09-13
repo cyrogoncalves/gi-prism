@@ -1,9 +1,19 @@
 // @ts-ignore
-import {rgb24, gray, blue, cyan, brightBlue, yellow, magenta, green, bold} from "https://deno.land/std@0.190.0/fmt/colors.ts";
+import {
+  blue,
+  bold,
+  brightBlue,
+  cyan,
+  gray,
+  green,
+  magenta,
+  rgb24,
+  yellow
+} from "https://deno.land/std@0.190.0/fmt/colors.ts";
 // @ts-ignore
 import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 // @ts-ignore
-import {Artifact, ArtifactPiece, elements, Kombat, pieces, PrismaUnit, Skill, UnitData} from "./model.ts";
+import {Artifact, ArtifactPiece, elements, Kombat, pieces, PrismaUnit, Skill, Team, UnitData} from "./model.ts";
 // @ts-ignore
 import {
   amber,
@@ -11,8 +21,11 @@ import {
   barbara,
   dullblade,
   hilichurl,
-  lumineAnemo, mainStats,
-  pyroHuntersBow, sets
+  kaeya,
+  lumineAnemo,
+  mainStats,
+  pyroHuntersBow,
+  sets
 } from "./data.ts";
 // @ts-ignore
 import * as txt from "./artifacts.en.map.json" assert { type: "json" };
@@ -43,7 +56,58 @@ const createRandomArtifact = (): Artifact => {
   }
 }
 
-const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Kombat) => {
+const getTargets = {
+  enemy: (kombat: Kombat) => [kombat.enemies.units[0]],
+  all: (kombat: Kombat) => kombat.enemies.units,
+  self: (kombat: Kombat) => [kombat.team.cur],
+  // team: (kombat: Kombat) => [kombat.team],
+  allies: (kombat: Kombat) => kombat.team.units,
+}
+
+const useSkill = (kombat: Kombat, atkName: string) => {
+  const source = kombat.cur
+  const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
+  if (source.auras[`cooldown-${skill.type}`]?.duration > 0) {
+    kombat.log = "Habilidade em cooldown"
+    return
+  }
+
+  const targets = getTargets[skill.target ?? "enemy"](kombat)
+  console.debug({targets})
+  attack(source, targets, skill, kombat)
+  const activeEnemy = kombat.enemies.units[0];
+  if (activeEnemy.hp > 0) {
+    const retaliateTarget = [...kombat.summons, ...kombat.team.units]
+      .find(u => u.auras["taunt"]) ?? source
+    attack(activeEnemy, [retaliateTarget], activeEnemy.skills[0], kombat)
+
+    if (retaliateTarget.hp < 1 && retaliateTarget.on?.defeated) {
+      console.log(`O ${retaliateTarget.data.name} fez uma coisa quando caiu...`)
+      const targets = getTargets[skill.target ?? "enemy"](kombat)
+      attack(retaliateTarget, targets, retaliateTarget.on.defeated, kombat)
+    }
+  }
+
+  kombat.log += kombat.enemies.units.filter(e=>e.hp <= 0)
+    .map(e=>`\nO ${e.data.name} caiu!`).join("")
+  kombat.enemies.units = kombat.enemies.units.filter(e=>e.hp > 0)
+
+  kombat.log += kombat.summons.filter(e=>e.hp <= 0)
+    .map(e=>`\nO ${e.data.name} caiu!`).join("")
+  kombat.summons = kombat.summons.filter(e=>e.hp > 0)
+
+  if (kombat.enemies.units.length === 0) {
+    const loot = createRandomArtifact()
+    // console.log("\x1B[2J\x1B[0;0H")
+    console.log("Você completou a câmara e encontrou um prêmio")
+    console.log(`"${txt[loot.set]?.[loot.piece].flavor}"`)
+    confirm("Seguir para a próxima câmara?")
+    kombat = kombatFor(team, chamberEnemies[floorId++])
+  }
+}
+
+const attack = (source: PrismaUnit, targets: PrismaUnit[], skill: Skill, kombat: Kombat) => {
+  const target = targets[0]
   const logs = []
   for (let hit of skill.hits ?? []) {
     const dice = hit.dice
@@ -63,21 +127,21 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
     logs.push(`${target.data.name} tomou ${damage} de dano ${element ?? ""} [${(rolls.map(r => `d${r.die}(${r.roll})`))}]`)
     target.hp -= damage
 
-    if (target.auras["風"] && target.auras["炎"]) { // pyro swirl
+    if (target.auras["風"] && target.auras["炎"]) {
       const rolls = x(source.auras["swirlBonus"] ?? 1, 4).map(roll)
       const damage = rolls.reduce((a,b)=> a+b.roll, 0)
       logs.push(`  mais ${damage} de redemoinho pyro [${rolls.map(r => `d${r.die}(${r.roll})`)}]`)
       target.hp -= damage
       delete target.auras["炎"]
       delete target.auras["風"]
-      kombat.enemies.filter(e=>e!==target).forEach(e=> { // e.auras["swirled炎"] = true
+      kombat.enemies.units.filter(e=>e!==target).forEach(e=> { // e.auras["swirled炎"] = true
         const rolls = x(source.auras["swirlBonus"] ?? 1, 4).map(roll)
         e.auras["炎"] = true
         const damage = rolls.reduce((a,b)=> a+b.roll, 0)
         logs.push(`  ${e.data.name} tomou ${damage} de redemoinho pyro [${(rolls.map(r => `d${r.die}(${r.roll})`))}]`)
         e.hp -= damage
       })
-    }
+    } // pyro swirl
   }
 
   if (skill.summon) {
@@ -99,26 +163,24 @@ const attack = (source: PrismaUnit, target: PrismaUnit, skill: Skill, kombat: Ko
     target.forEach(c=>c.hp = Math.min(c.hp+value, c.data.vitality))
   }
 
+  if (skill.aura) {
+    const targets = skill.aura.target === "team" ? [kombat.team.auras]
+      : (getTargets[skill.aura.target ?? "enemy"](kombat)).map(e=>e.auras)
+  } // aura
+
   kombat.log += logs.join("\n")
 }
 
-const atkCommands = { e: "elemental", r: "burst", q: "normal" }
+const teamFor = (units: PrismaUnit[]): Team => ({
+  units, curIdx: 0, auras: {},
+  get cur() { return this.units[this.curIdx] },
+})
+const kombatFor = (team: Team, enemies: Team): Kombat => ({
+  enemies, team, summons: [],
+  log: `Você achou ${enemies.units.length} Hilixús!`,
+  get cur() { return this.team.cur },
+})
 
-const team = [
-  createUnit(lumineAnemo, [dullblade]),
-  createUnit(amber, [pyroHuntersBow]),
-  createUnit(barbara, [apprenticesNotes]),
-];
-let floorId = 0
-const chamberEnemies = [
-  [...Array(3)].map(_=>createUnit(hilichurl)),
-  [...Array(5)].map(_=>createUnit(hilichurl)),
-  [...Array(8)].map(_=>createUnit(hilichurl)),
-]
-
-// const statusStr = (u: PrismaUnit) =>
-//   `${u.data.name}[${u.hp}/${u.data.vitality}]${Object.keys(u.auras)
-//     .filter(a=>elements.includes(a as any))}`
 const elementColorMap = {
   "炎": orange,
   "水": blue,
@@ -135,95 +197,49 @@ const hp = (c: PrismaUnit) => "♥".repeat(Math.max(0, c.hp))
   + "♡".repeat(Math.min(c.data.vitality - c.hp, c.data.vitality))
 const printStatus = (kombat: Kombat) => {
   console.log("\x1B[2J\x1B[0;0H")
-  console.log(kombat.team.map((c, i) =>
-    ` ${(i===kombat.cur ? gray : elementColorMap[c.data.element])(c.data.name)} `).join(""))
-  const char = kombat.char
-  console.log(`${bold(charColor(char.data))} ${hp(char)} `)
+  console.log(kombat.team.units.map((c, i) =>
+    ` ${(i===kombat.team.curIdx ? gray : elementColorMap[c.data.element])(c.data.name)} `).join(""))
+  console.log(`${bold(charColor(kombat.cur.data))} ${hp(kombat.cur)} `)
   for (let summon of kombat.summons)
     console.log(` ${charColor(summon.data)} ${hp(summon)} `)
   console.log("")
-  for (let enemy of kombat.enemies) {
+  for (let enemy of kombat.enemies.units) {
     const elementalAuras = Object.keys(enemy.auras)
       .filter(a=>elements.includes(a as any))
       .map(e=>elementColorMap[e](e));
     console.log(`${charColor(enemy.data)}${elementalAuras} ${hp(enemy)} `)
   }
-  // console.log([kombat.team, kombat.summons, kombat.enemies]
-  //   .map(t=>t.map(statusStr)).join("   ")
-  //   .replace("炎", rgb24("炎", 0xef7a35)))
   console.log(kombat.log)
   kombat.log = ""
 }
 
-const enemies = chamberEnemies[floorId++];
-let kombat: Kombat = {enemies, team, cur: 0, summons: [],
-  get char() { return this.team[this.cur] },
-  log: `Você achou ${enemies.length} Hilixús!` }
+const team: Team = teamFor([
+  createUnit(lumineAnemo, [dullblade]),
+  createUnit(amber, [pyroHuntersBow]),
+  createUnit(barbara, [apprenticesNotes]),
+  createUnit(kaeya, []),
+])
+let floorId = 0
+const chamberEnemies = [
+  teamFor([...Array(3)].map(_=>createUnit(hilichurl))),
+  teamFor([...Array(5)].map(_=>createUnit(hilichurl))),
+  teamFor([...Array(8)].map(_=>createUnit(hilichurl))),
+]
+let kombat: Kombat = kombatFor(team, chamberEnemies[floorId++])
 printStatus(kombat)
 
 for await (const keypress of readKeypress()) {
   // console.debug({keypress});
   if (keypress.ctrlKey && keypress.key === 'c') Deno.exit(0);
 
-  if (["1", "2", "3", "4", "5"].slice(0, kombat.team.length).includes(keypress.key)) {
-    kombat.cur = Number(keypress.key) - 1
+  if (["1", "2", "3", "4", "5"].slice(0, kombat.team.units.length).includes(keypress.key)) {
+    kombat.team.curIdx = Number(keypress.key) - 1
+    // trigger on:change
   } else if (["q", "w", "e", "r"].includes(keypress.key)) {
-    const source = kombat.team[kombat.cur]
-    const atkName = atkCommands[keypress.key] ?? keypress.key
-    const skill = source.skills.find(s => (s.type ?? "normal") === atkName)
-    if (source.auras[`cooldown-${skill.type}`]?.duration > 0) {
-      kombat.log = "Habilidade em cooldown"
-      continue
-    }
-
-    const target = kombat.enemies[0]
-    attack(source, target, skill, kombat)
-    if (target.hp > 0) {
-      const retaliateTarget = [...kombat.summons, ...kombat.team]
-        .find(u => u.auras["taunt"]) ?? source
-      attack(target, retaliateTarget, target.skills[0], kombat)
-
-      if (retaliateTarget.hp < 1 && retaliateTarget.on?.defeated) {
-        console.log(`O ${retaliateTarget.data.name} fez uma coisa quando caiu...`)
-        attack(retaliateTarget, target, retaliateTarget.on.defeated, kombat)
-      }
-    }
-
-    kombat.log += kombat.enemies.filter(e=>e.hp <= 0)
-      .map(e=>`\nO ${e.data.name} caiu!`).join("")
-    kombat.enemies = kombat.enemies.filter(e=>e.hp > 0)
-
-    kombat.log += kombat.summons.filter(e=>e.hp <= 0)
-      .map(e=>`\nO ${e.data.name} caiu!`).join("")
-    kombat.summons = kombat.summons.filter(e=>e.hp > 0)
-
-    if (kombat.enemies.length === 0) {
-      const loot = createRandomArtifact()
-      // console.log("\x1B[2J\x1B[0;0H")
-      console.log("Você completou a câmara e encontrou um prêmio")
-      console.log(`"${txt[loot.set]?.[loot.piece].flavor}"`)
-      confirm("Seguir para a próxima câmara?")
-
-      const enemies = chamberEnemies[floorId++];
-      kombat = {enemies, team, cur: 0, summons: [],
-        get char() { return this.team[this.cur] },
-        log: `Você achou ${enemies.length} Hilixús!`}
-    }
+    const atkName = {e: "elemental", r: "burst", q: "normal"}[keypress.key] ?? keypress.key
+    useSkill(kombat, atkName)
   }
   printStatus(kombat)
 }
-
-// 👤 Asagi          ❤  [
-// e🕐 q🔴 w⚔️
-// ❤️❤️❤️❤️🤍🤍🖤  [4/6]             🧟[1/10] 🧟[1/10] 🧟[1/10] 🧟[1/10] 🧟[1/10]
-// ▰▰▰▰▰▰▱▱▱ 9                    炎        炎
-// Lumn Ambr Barb Lisa
-
-// Alhaitham
-// Ningguang
-// Xiangling
-// Neuvillette
-// Wriothesley
-
 
 // deno run prisma.ts

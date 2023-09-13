@@ -3,7 +3,7 @@ export type PrismaUnit = {
   data: UnitData,
   equips?: Equip[],
   skills: Skill[],
-  auras: { [name in string]: any },
+  auras: object,
   on?: Triggers
 }
 export type UnitData = {
@@ -12,13 +12,16 @@ export type UnitData = {
   element?: Element,
   skills?: Skill[],
   auras?: { [name in string]: any },
-  on?: Triggers
+  // on?: Triggers
 }
 export type Summon = UnitData & {
   duration: number
+  on?: Triggers
 }
 export type Aura = {
-  duration: number
+  duration?: number
+  stacks?: number
+  target?: Target
   on?: Triggers
 }
 export type Skill = {
@@ -26,16 +29,18 @@ export type Skill = {
   desc?: string
   cooldown?: number
   hits?: {
-    dice: number[],
-    element?: Element
+    dice?: number[],
+    element?: Element,
+    $dice?: (k: Kombat)=>number[]
   }[],
   summon?: Summon,
   aura?: Aura,
   heal?: {
-    target: string,
+    target: Target,
     value?: number,
     $value?: (k: Kombat) => number
-  }
+  },
+  target?: Target
 }
 export type Equip = {
   desc?: string,
@@ -46,7 +51,7 @@ export type Equip = {
 export const elements = ["炎", "水", "氷", "電", "風", "岩", "草"] as const
 export type Element = typeof elements[number];
 
-const triggers = ["start", "atk", "hit", "defeated", "roll", "equip"] as const
+const triggers = ["start", "atk", "hit", "defeated", "roll", "equip", "change"] as const
 type Trigger = typeof triggers[number];
 export type Triggers = { [t in Trigger]?: any }
 
@@ -60,14 +65,20 @@ export type Artifact = Equip & {
   // flavor: string
 }
 
-export type Kombat = {
-  team: PrismaUnit[],
-  enemies: PrismaUnit[],
-  summons: PrismaUnit[],
-  cur: number,
-  log: string,
+export type Team = {
+  units: PrismaUnit[],
+  auras: object,
+  curIdx: number,
+  cur: PrismaUnit
+}
 
-  char: PrismaUnit
+export type Kombat = {
+  team: Team,
+  enemies: Team,
+  summons: PrismaUnit[],
+  cur: PrismaUnit,
+  log: string,
 }
 
 // type Attack = { damage: number, rolls: { roll:number, die:number }[] }
+export type Target = "self" | "team" | "enemy" | "all" | "allies";
