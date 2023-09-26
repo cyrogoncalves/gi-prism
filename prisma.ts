@@ -1,19 +1,9 @@
 // @ts-ignore
-import {
-  blue,
-  bold,
-  brightBlue,
-  cyan,
-  gray,
-  green,
-  magenta,
-  rgb24,
-  yellow
-} from "https://deno.land/std@0.190.0/fmt/colors.ts";
+import {bold, gray, rgb24} from "https://deno.land/std@0.190.0/fmt/colors.ts";
 // @ts-ignore
 import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 // @ts-ignore
-import {Artifact, ArtifactPiece, elements, Kombat, pieces, PrismaUnit, Skill, Team, UnitData} from "./model.ts";
+import {Artifact, ArtifactPiece, Element, elements, Kombat, pieces, PrismaUnit, Skill, Team, UnitData} from "./model.ts";
 // @ts-ignore
 import {
   amber,
@@ -29,8 +19,6 @@ import {
 } from "./data.ts";
 // @ts-ignore
 import * as txt from "./artifacts.en.map.json" assert { type: "json" };
-
-const orange = (x:string):string => rgb24(x, 0xef7a35)
 
 const createUnit = (data: UnitData, equips: any[] = []): PrismaUnit => ({
   hp: data.vitality,
@@ -105,6 +93,11 @@ const useSkill = (kombat: Kombat, atkName: string) => {
     kombat = kombatFor(team, chamberEnemies[floorId++])
   }
 }
+
+const damageDisplay = (roll: {die: number, roll:number}, element: Element) => ({
+"4":"▲", 6:"◼", 8:"◆", 10:"◈",20:"⯃"
+
+})
 
 const attack = (source: PrismaUnit, targets: PrismaUnit[], skill: Skill, kombat: Kombat) => {
   const target = targets[0]
@@ -182,23 +175,22 @@ const kombatFor = (team: Team, enemies: Team): Kombat => ({
 })
 
 const elementColorMap = {
-  "炎": orange,
-  "水": blue,
-  "氷": brightBlue,
-  "電": magenta,
-  "風": cyan,
-  "岩": yellow,
-  "草": green
+  "炎": { hex: 0xef7a35, text: "#ef7a35" },
+  "水": { hex: 0x1b8cea, text: "#1b8cea" },
+  "氷": { hex: 0xa0d7e4, text: "#a0d7e4" },
+  "電": { hex: 0xb08fc2, text: "#b08fc2" },
+  "風": { hex: 0x75c2aa, text: "#75c2aa" },
+  "岩": { hex: 0xcc9f2d, text: "#cc9f2d" },
+  "草": { hex: 0xa6c938, text: "#a6c938" }
 }
-// const elementColor = (text: string, element: string): string =>
-//   element ? elementColorMap[element](text) : text
-const charColor = (d: UnitData) => d.element ? elementColorMap[d.element](d.name) : d.name
+const charColor = (d: UnitData) => d.element
+  ? rgb24(d.name, elementColorMap[d.element].hex) : d.name
 const hp = (c: PrismaUnit) => "♥".repeat(Math.max(0, c.hp))
   + "♡".repeat(Math.min(c.data.vitality - c.hp, c.data.vitality))
 const printStatus = (kombat: Kombat) => {
   console.log("\x1B[2J\x1B[0;0H")
   console.log(kombat.team.units.map((c, i) =>
-    ` ${(i===kombat.team.curIdx ? gray : elementColorMap[c.data.element])(c.data.name)} `).join(""))
+    i===kombat.team.curIdx ? gray(c.data.name) : charColor(c.data)).join("  "))
   console.log(`${bold(charColor(kombat.cur.data))} ${hp(kombat.cur)} `)
   for (let summon of kombat.summons)
     console.log(` ${charColor(summon.data)} ${hp(summon)} `)
@@ -206,7 +198,7 @@ const printStatus = (kombat: Kombat) => {
   for (let enemy of kombat.enemies.units) {
     const elementalAuras = Object.keys(enemy.auras)
       .filter(a=>elements.includes(a as any))
-      .map(e=>elementColorMap[e](e));
+      .map(e=>rgb24(e, elementColorMap[e].hex));
     console.log(`${charColor(enemy.data)}${elementalAuras} ${hp(enemy)} `)
   }
   console.log(kombat.log)
